@@ -60,6 +60,9 @@ function run({ work, temp }, name, env) {
 const staged = (work) => git(work, 'diff', '--cached', '--name-only', '-z').split('\0').filter(Boolean);
 const pushed = (work) => git(work, 'ls-tree', '-r', '--name-only', '-z', 'origin/main').split('\0').filter(Boolean);
 
+// Windows has no file names with a * or a new line in them, so they can't be made to try.
+const NAMES = process.platform === 'win32' && 'Windows file names can\'t hold * or a new line';
+
 test('the Action exports the documents named and matched, and pushes only their HTML', () => {
   const r = repo({ 'a.md': '# A\n', 'deck/b.md': '# B\n', 'deck/c.md': '# C\n' });
   fs.writeFileSync(path.join(r.work, 'gha-creds-1a2b3c.json'), '{}');
@@ -70,7 +73,7 @@ test('the Action exports the documents named and matched, and pushes only their 
   assert.deepEqual(pushed(r.work).sort(), ['a.html', 'a.md', 'deck/b.html', 'deck/b.md', 'deck/c.html', 'deck/c.md']);
 });
 
-test('the Action takes a name a pattern matched as itself, not as another pattern', () => {
+test('the Action takes a name a pattern matched as itself, not as another pattern', { skip: NAMES }, () => {
   const r = repo({ 'x*.md': '# X\n', 'xy.html': 'before\n' });
   fs.writeFileSync(path.join(r.work, 'xy.html'), 'changed, and not by the Action\n');
   let out = run(r, 'Export', { FILES: '*.md' });
@@ -81,7 +84,7 @@ test('the Action takes a name a pattern matched as itself, not as another patter
   assert.equal(git(r.work, 'show', 'origin/main:xy.html'), 'before\n');
 });
 
-test('the Action won\'t export a name with a new line in it, so it can\'t stage another file', () => {
+test('the Action won\'t export a name with a new line in it, so it can\'t stage another file', { skip: NAMES }, () => {
   const r = repo({ 'deck.md\ngha-creds-*\nz.md': '# Deck\n', 'z.html': 'z\n' });
   fs.writeFileSync(path.join(r.work, 'gha-creds-1a2b3c.json'), '{}');
   const out = run(r, 'Export', { FILES: '*.md' });
@@ -90,7 +93,7 @@ test('the Action won\'t export a name with a new line in it, so it can\'t stage 
   assert.deepEqual(staged(r.work), []);
 });
 
-test('the Action adds each exported name whole, a new line and all', () => {
+test('the Action adds each exported name whole, a new line and all', { skip: NAMES }, () => {
   const name = 'deck\ngha-creds-*\nz.html';
   const r = repo({ 'z.html': 'z\n' });
   fs.writeFileSync(path.join(r.work, name), 'deck\n');

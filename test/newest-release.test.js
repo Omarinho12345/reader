@@ -35,7 +35,10 @@ function check(version, from) {
 
 const TAGS = ['v0.0.1', 'v0.0.2', 'v0.0.9', 'v0.0.10', 'v0.1.0-rc.1', 'docs'];
 
-test('the newest release, by its numbers, is the latest', (t) => {
+// The scripts are bash, and run only in the release and Docker workflows, on Ubuntu.
+const BASH = process.platform === 'win32' && 'the release scripts run on Ubuntu';
+
+test('the newest release, by its numbers, is the latest', { skip: BASH }, (t) => {
   const from = remote(TAGS);
   t.after(() => fs.rmSync(from, { recursive: true, force: true }));
   assert.deepEqual(check('0.0.10', from), {
@@ -44,14 +47,14 @@ test('the newest release, by its numbers, is the latest', (t) => {
   });
 });
 
-test('an older release is not, though it sorts last as text', (t) => {
+test('an older release is not, though it sorts last as text', { skip: BASH }, (t) => {
   const from = remote(TAGS);
   t.after(() => fs.rmSync(from, { recursive: true, force: true }));
   assert.equal(check('0.0.9', from).output, 'latest=false\n');
   assert.equal(check('0.0.2', from).output, 'latest=false\n');
 });
 
-test('a pre-release is not a release', (t) => {
+test('a pre-release is not a release', { skip: BASH }, (t) => {
   const from = remote(TAGS);
   t.after(() => fs.rmSync(from, { recursive: true, force: true }));
   assert.equal(check('0.1.0-rc.1', from).output, 'latest=false\n');
@@ -73,20 +76,20 @@ function unpushed(t, said, status) {
   return { status: run.status, log: run.stdout };
 }
 
-test('a release not on Docker Hub can be pushed', (t) => {
+test('a release not on Docker Hub can be pushed', { skip: BASH }, (t) => {
   // Word for word what buildx says of a tag that isn't there.
   const { status, log } = unpushed(t, 'ERROR: docker.io/jzheaux/reader:0.0.3: not found', 1);
   assert.equal(status, 0);
   assert.match(log, /jzheaux\/reader:0\.0\.3 isn't pushed yet/);
 });
 
-test('a release already on Docker Hub can\'t be pushed again', (t) => {
+test('a release already on Docker Hub can\'t be pushed again', { skip: BASH }, (t) => {
   const { status, log } = unpushed(t, 'Name: docker.io/jzheaux/reader:0.0.3', 0);
   assert.equal(status, 1);
   assert.match(log, /already pushed, and is left as it is/);
 });
 
-test('a registry that can\'t say stops the push as well', (t) => {
+test('a registry that can\'t say stops the push as well', { skip: BASH }, (t) => {
   const { status, log } = unpushed(t, 'ERROR: failed to do request: connection refused', 1);
   assert.equal(status, 1);
   assert.match(log, /connection refused/);

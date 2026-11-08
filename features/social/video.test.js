@@ -153,7 +153,7 @@ function moving(t) {
     this.insertBefore(node, child);
   };
   t.after(() => delete prototype.moveBefore);
-  const scripts = FEATURES.flatMap((x) => [x.preview ?? []].flat()).map((path) => path.slice(path.indexOf('features/')));
+  const scripts = FEATURES.flatMap((x) => [x.preview ?? []].flat());
   run(f.window, 'static/preview-api.js', 'static/spoken.js', 'static/tone.js', ...scripts, 'static/ink.js', 'static/preview.js');
   return { ...f, show: (body, m = {}) => f.send({ type: 'render', css: '', body, ...m }) };
 }

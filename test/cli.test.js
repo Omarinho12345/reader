@@ -35,6 +35,9 @@ function startWith(env, ...args) {
   });
 }
 
+// The stand-in for tailscale is a shell script, which Windows can't run as a command.
+const FAKE_TAILSCALE = process.platform === 'win32' && 'the stand-in tailscale is a shell script';
+
 test('the address printed is the one listened on', async () => {
   const { url, stop } = await start('--host', '::1', '--port', '0');
   try {
@@ -274,7 +277,7 @@ function startAll(env, ...args) {
   });
 }
 
-test('--tailscale serves both ports on the tailnet, answers to its names, and takes them off when stopped', async () => {
+test('--tailscale serves both ports on the tailnet, answers to its names, and takes them off when stopped', { skip: FAKE_TAILSCALE }, async () => {
   const { PATH, log } = fakeTailscale();
   const { out, stop } = await startAll({ ...process.env, PATH }, '--tailscale', '--port', '0', '--frame-port', '0');
   const port = /http:\/\/127\.0\.0\.1:(\d+)\//.exec(out)[1];
@@ -303,7 +306,7 @@ test('--tailscale serves both ports on the tailnet, answers to its names, and ta
   ]);
 });
 
-test('--tailscale leaves a port the tailnet already serves to reader as it was', async () => {
+test('--tailscale leaves a port the tailnet already serves to reader as it was', { skip: FAKE_TAILSCALE }, async () => {
   const held = await hold(0);
   const port = held.address().port;
   held.close();
@@ -315,7 +318,7 @@ test('--tailscale leaves a port the tailnet already serves to reader as it was',
   assert.match(asked, /serve --bg --http=\d+ /);
 });
 
-test('--tailscale is refused when the tailnet serves the port for something else, or tailscale is missing', async () => {
+test('--tailscale is refused when the tailnet serves the port for something else, or tailscale is missing', { skip: FAKE_TAILSCALE }, async () => {
   const held = await hold(0);
   const port = held.address().port;
   held.close();
