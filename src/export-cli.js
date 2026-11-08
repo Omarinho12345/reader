@@ -80,7 +80,7 @@ export async function main(argv) {
       for (const image of missing) warn(`${rel}: no ${image}, so it's left as a link`);
       const out = opts.out ?? path.join(root, path.dirname(rel), name);
       save(out, html);
-      console.log(`${rel} -> ${path.relative(root, path.resolve(out))}`);
+      console.log(`${rel} -> ${path.relative(root, path.resolve(out)).split(path.sep).join('/')}`);
     }
   } finally {
     await stop();
