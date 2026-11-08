@@ -31,6 +31,12 @@ test('a box is named by the words beside it, for a screen reader', () => {
   assert.match(body, /class="choice-box" [^>]*aria-label="Sat AM"/);
 });
 
+test('a box is named by the date written in its line', () => {
+  const { body } = render('- [ ] Call on date:2026-11-10[]\n- [ ] Kick off date:2026-11-03[the kickoff]\n');
+  assert.match(body, /class="task-box" [^>]*aria-label="Call on November 10, 2026"/);
+  assert.match(body, /class="task-box" [^>]*aria-label="Kick off the kickoff"/);
+});
+
 test('choice items become radio buttons, one group to a list', () => {
   const { body } = render('- ( ) red\n- (x) blue\n  - ( ) navy\n  - ( ) sky\n- ( ) green\n\ntext\n\n- ( ) yes\n- ( ) no\n');
   assert.match(body, /<li class="task"><input type="radio" class="choice-box" name="choice-1" data-line="0" [^>]*> red<\/li>/);

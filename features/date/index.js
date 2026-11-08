@@ -41,6 +41,11 @@ export function readable(iso) {
   return d && `${MONTHS[d.month - 1]} ${d.day}, ${d.year}`;
 }
 
+/** A date as it's said: the words in its brackets, or else the day it names. */
+function spoken(iso, label) {
+  return label || readable(iso) || 'pick a date';
+}
+
 export function dates(md) {
   keepWritten(md);
 
@@ -54,7 +59,8 @@ export function dates(md) {
       const placed = [];
       const out = line.replace(DATE, (m, iso = '', label) => {
         if (iso && !parseDate(iso)) return m;
-        placed.push({ typed: m, date: iso, label: label.trim(), line: n, text, col: cols[k++] });
+        const said = label.trim();
+        placed.push({ typed: m, date: iso, label: said, words: spoken(iso, said), line: n, text, col: cols[k++] });
         return placeholder(OPEN, CLOSE, found.length + placed.length - 1);
       });
       // Not all of them: there's no telling which is which, so none is edited.
@@ -72,6 +78,8 @@ export function dates(md) {
       if (!found[k]) return null;
       const t = new state.Token('date', 'time', 0);
       t.meta = found[k];
+      // The words it's read as, for a line that names something by them.
+      t.content = found[k].words;
       return t;
     });
     // Anywhere else (code, the front matter), a date goes back to what was typed.
@@ -92,8 +100,8 @@ export function dates(md) {
   });
 
   md.renderer.rules.date = (tokens, i, opts, env) => {
-    const { date, label, line, text, col } = tokens[i].meta;
-    const shown = escapeHtml(label || readable(date) || 'pick a date');
+    const { date, line, text, col } = tokens[i].meta;
+    const shown = escapeHtml(tokens[i].meta.words);
     // What the preview needs to change it, and to be reached by keyboard.
     // Not on a slide, where the deck shows no calendar, nor on an exported
     // page, which has no script to show one with: there it's only read.
