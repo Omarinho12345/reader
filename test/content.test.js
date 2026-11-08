@@ -269,8 +269,8 @@ test('extract takes away the folders it made, when it can\'t finish', () => {
   const { mtime } = content.read('a.md');
   const files = [{ path: 'new/deep/one.md', text: '# one\n' }, { path: 'sub/two.md', text: '# two\n' }];
   assert.throws(() => content.extract('a.md', { text: 42, baseMtime: mtime, files }), PathError);
-  assert.equal(fs.existsSync(path.join(root, 'new')), false);
-  assert.equal(fs.existsSync(path.join(root, 'sub', 'two.md')), false);
+  assert.equal(fs.existsSync(path.join(root, 'new')), false, 'the folders it made are gone');
+  assert.equal(fs.existsSync(path.join(root, 'sub', 'two.md')), false, 'the files it made are gone');
   assert.ok(fs.existsSync(path.join(root, 'sub', 'b.markdown')));
 });
 

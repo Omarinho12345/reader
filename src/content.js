@@ -503,8 +503,13 @@ export function createContent(rootDir) {
     const folders = [];
     try {
       for (const t of targets) {
-        const first = fs.mkdirSync(path.dirname(t.abs), { recursive: true });
-        if (first) folders.push([first, path.dirname(t.abs)]);
+        // Found by walking up the path itself, rather than from what mkdirSync
+        // returns, which on Windows needn't spell it as `root` does (RUNNER~1).
+        const last = path.dirname(t.abs);
+        let first = null;
+        for (let dir = last; inside(dir) && dir !== root && !fs.existsSync(dir); dir = path.dirname(dir)) first = dir;
+        fs.mkdirSync(last, { recursive: true });
+        if (first) folders.push([first, last]);
         fs.writeFileSync(t.abs, t.text, { encoding: 'utf8', flag: 'wx' });
         made.push(t.abs);
       }
@@ -513,8 +518,9 @@ export function createContent(rootDir) {
     } catch (err) {
       for (const abs of made) fs.rmSync(abs, { force: true });
       for (const [first, last] of folders.reverse()) {
-        for (let dir = last; dir.startsWith(first); dir = path.dirname(dir)) {
+        for (let dir = last; ; dir = path.dirname(dir)) {
           if (fs.existsSync(dir) && !fs.readdirSync(dir).length) fs.rmdirSync(dir);
+          if (dir === first) break;
         }
       }
       throw err;
