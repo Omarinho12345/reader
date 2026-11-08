@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { slides, pages, split, lift, isDeck } from '../src/slides.js';
 
 const DECK = `---
@@ -84,6 +85,13 @@ test('a slide\'s text fills the window, times the deck\'s own text size', () => 
   assert.ok(Math.abs(looks(1600, 720) - 26.88) < 0.1);
   // ⌘+ to 125% makes it a quarter bigger again.
   assert.ok(Math.abs(looks(1920, 1080, 1.25) - 50) < 0.1);
+});
+
+test('a slide grown to fill the screen keeps its title and its code at their size', async () => {
+  const css = await readFile(new URL('../static/preview.css', import.meta.url), 'utf8');
+  assert.match(css, /\.deck \.gm-doc > \* \{ zoom: var\(--fit, 1\); \}/, 'what is on a slide grows with it');
+  assert.match(css, /\.deck \.gm-doc > \.slide-title \{ zoom: min\(var\(--fit, 1\), 1\); \}/, 'its title shrinks with it, but doesn\'t grow');
+  assert.match(css, /\.deck \.gm-doc pre \{ zoom: calc\(1 \/ max\(var\(--fit, 1\), 1\)\); \}/, 'its code is grown back to its size');
 });
 
 test('a slide\'s opening heading is set apart from the rest; one that\'s all headings is a cover, and one with none is all body', () => {

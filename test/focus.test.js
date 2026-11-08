@@ -101,6 +101,33 @@ test("one of a row's actions keeps the keyboard when the list is drawn again, as
   }
 });
 
+test("a version's Promote, a version group's › and an outline entry's Extract keep the keyboard when the list is drawn again", async () => {
+  const redrawn = async (find, what) => {
+    const was = find();
+    was.focus();
+    window.dispatchEvent(new window.Event('focus'));
+    await settled();
+    assert.ok(find() !== was, `${what}: the list was drawn again`);
+    assertElement(document.activeElement, find(), `${what} has the keyboard`);
+  };
+  const before = files;
+  files = [...files, 'd.md', 'd.v2.md'];
+  window.dispatchEvent(new window.Event('focus'));
+  await settled();
+  const into = () => el.files.querySelector('.group[data-group="d"]').closest('li').querySelector(':scope > .row-action.into');
+  await redrawn(into, "a version group's ›");
+  into().click();
+  await settled();
+  await redrawn(() => row('d.v2.md').closest('li').querySelector('.row-action.promote'), 'Promote');
+  files = before;
+  state.group = null;
+  window.dispatchEvent(new window.Event('focus'));
+  await settled();
+  row('a.md').closest('li').querySelector('.row-action.into').click();
+  await settled();
+  await redrawn(() => el.files.querySelector('.entry').closest('li').querySelector('.row-action.extract'), 'Extract');
+});
+
 test('a page dot clicked gives the keyboard to the dot of the page turned to, and Back or Next to the other at an end', () => {
   const pages = ['One', 'Two', 'Three'].map((t, line) => ({ body: `<h1>${t}</h1>`, line }));
   setPages(pages, 'a.md');

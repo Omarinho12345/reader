@@ -384,6 +384,14 @@ test('a fence that moves its highlight says the lines it moves to; a later step 
     ['Code', 'let a', 'let b', 'outer', 'inner']);
 });
 
+test('what a step says leaves out what\'s hidden from a screen reader, as a callout\'s icon is', () => {
+  assert.deepEqual(saying('# Callouts\n\n> [!NOTE]\n> Mind the step.\n', 1), ['Callouts', 'Note Mind the step.']);
+});
+
+test('a heading that is itself a step isn\'t said as the slide\'s title, but as the step it is', () => {
+  assert.deepEqual(saying('- # Arrives later\n- then this\n', 1, 2), ['', 'Arrives later', 'then this']);
+});
+
 test('several steps shown at once are said together, and a long one is cut to a sentence or two', () => {
   const long = `${'This is a sentence of some length. '.repeat(10)}`;
   const [, both, cut] = saying(`# Many\n\nOne.\n\nTwo.\n\n${long}\n`, 2, 3);
