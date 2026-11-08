@@ -259,6 +259,17 @@ test('Esc puts the overview away here, the deck where it was, and says so', () =
   assert.ok($('overview').hidden);
 });
 
+test('a deck sent afresh puts the overview here away, as its slides may not be the ones laid out', () => {
+  const { $, press, say } = speaker();
+  const slides = [{ body: '' }, { body: '' }, { body: '' }];
+  say({ type: 'deck', open: true, index: 1, reveal: 0, slides, meta: {} });
+  press('O');
+  assert.ok(!$('overview').hidden);
+  say({ type: 'deck', open: true, index: 0, reveal: 0, slides: slides.slice(1), meta: {} });
+  assert.ok($('overview').hidden);
+  assert.ok(!$('speaker').inert, 'the rest is in reach again');
+});
+
 test("both frames are sent the deck's title", async () => {
   const window = file('static/speaker.html');
   let heard = null;
