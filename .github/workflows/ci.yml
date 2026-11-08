@@ -10,12 +10,16 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    # Jobs take under a minute (slowest 57s, Oct-Nov 2026), so 5 means something's
-    # stuck, not slow. Raise it if a normal run gets near 2 minutes.
-    timeout-minutes: 5
+    runs-on: ${{ matrix.os }}
+    # Jobs take under a minute on Ubuntu (slowest 57s, Oct-Nov 2026), so 5 means
+    # something's stuck, not slow; Windows is given twice that, as its runners
+    # start and install more slowly. Raise either if a normal run gets near half.
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 10 || 5 }}
     strategy:
+      # One failing on Windows doesn't cancel the others, so each says what it found.
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         node: [22, 24]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
