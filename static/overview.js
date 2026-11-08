@@ -58,6 +58,29 @@
     }
 
     function open(all, current) {
+      build(all, current);
+      highlight(current, { scroll: 'center' });
+      // The slide with the highlight says itself, as it gets the keyboard;
+      // what it doesn't say is that the overview is out.
+      say('Overview');
+    }
+
+    /**
+     * The deck reloaded with the overview out, as it does on every save: its
+     * thumbnails drawn afresh, quietly, and the highlight and the scroll left
+     * where they were, so a talk being written can be watched as it changes.
+     */
+    function refresh(all, current, highlighted = at) {
+      if (root.hidden || !all.length) return;
+      const last = all.length - 1;
+      const top = root.scrollTop;
+      build(all, Math.min(current, last));
+      root.scrollTop = top;
+      highlight(Math.min(highlighted, last));
+    }
+
+    /** The thumbnails of `all`, `current` marked as showing, drawn as they come into view. */
+    function build(all, current) {
       slides = all;
       list.replaceChildren(...slides.map((slide, i) => {
         const li = document.createElement('li');
@@ -87,17 +110,6 @@
       } else {
         for (const li of options()) show(li);
       }
-      highlight(current, { scroll: 'center' });
-      // The slide with the highlight says itself, as it gets the keyboard;
-      // what it doesn't say is that the overview is out.
-      say('Overview');
-    }
-
-    function refresh(all, current, highlighted = at) {
-      if (root.hidden || !all.length) return;
-      const last = all.length - 1;
-      open(all, Math.min(current, last));
-      highlight(Math.min(highlighted, last));
     }
 
     function close({ picked = false } = {}) {

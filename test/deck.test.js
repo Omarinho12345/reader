@@ -239,6 +239,11 @@ test('a reload refreshes the open overview, preserving its highlight separately 
   deckKey({ key: 'O' });
   deckKey({ key: 'ArrowRight' });
   assert.equal(window.document.activeElement, options()[2]);
+  const { prototype } = window.HTMLElement;
+  const scroll = Object.getOwnPropertyDescriptor(prototype, 'scrollIntoView');
+  const scrolled = [];
+  prototype.scrollIntoView = function (how) { scrolled.push(how?.block); };
+  el.deckSays.textContent = '';
 
   globalThis.fetch = async () => ({
     ok: true,
@@ -261,6 +266,10 @@ test('a reload refreshes the open overview, preserving its highlight separately 
   assert.equal(options()[2].getAttribute('aria-selected'), 'true');
   assert.equal(window.document.activeElement, options()[2]);
   assert.equal(options()[2].classList.contains('now'), false);
+  assert.notEqual(el.deckSays.textContent, 'Overview', 'a reload doesn\'t say the overview again, as every save would');
+  assert.ok(!scrolled.includes('center'), 'nor bring the slide showing to the middle');
+  if (scroll) Object.defineProperty(prototype, 'scrollIntoView', scroll);
+  else delete prototype.scrollIntoView;
   deckKey({ key: 'Escape' });
   deck.open = false;
 });
@@ -297,7 +306,7 @@ test('a reload clamps an overview highlight when its slide is removed', async ()
 
 test('Ctrl+G closes the overview before opening Go To', () => {
   state.current = { path: 'talk.md', type: 'md' };
-  el.editor.value = '# A talk\\n';
+  el.editor.value = '# A talk\n';
   presenting(3, { index: 1 });
   deckKey({ key: 'O' });
   assert.equal(el.overview.hidden, false);
@@ -311,7 +320,15 @@ test('Ctrl+G closes the overview before opening Go To', () => {
   deck.open = false;
 });
 
-test('a theme change redraws the slide with the new theme', async () => {
+test('a theme change draws the slide, and the open overview\'s thumbnails, in the new theme', async () => {
+  const IO = window.IntersectionObserver;
+  let seen = null;
+  window.IntersectionObserver = class {
+    constructor(fn) { seen = (targets) => fn(targets.map((target) => ({ target, isIntersecting: true }))); }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
   const originalTheme = window.Theme;
   let listener;
   let chosen = 'light';
@@ -325,8 +342,16 @@ test('a theme change redraws the slide with the new theme', async () => {
   wireTheme();
   assert.equal(radios.find((radio) => radio.value === 'light').checked, true);
 
-  const asked = presenting(1);
+  const asked = presenting(2);
   state.current = { path: 'talk.md', type: 'other' };
+  deckKey({ key: 'O' });
+  seen(options().slice(0, 1));
+  const drawn = [];
+  const frame = options()[0].querySelector('iframe');
+  Object.defineProperty(frame, 'contentWindow', { value: { postMessage: (m) => drawn.push(m) }, configurable: true });
+  window.dispatchEvent(new window.MessageEvent('message', { data: { type: 'ready' }, source: frame.contentWindow }));
+  assert.deepEqual(drawn.map((m) => m.dark), [false]);
+
   chosen = 'dark';
   dark = true;
   listener(true, 'dark');
@@ -335,8 +360,11 @@ test('a theme change redraws the slide with the new theme', async () => {
 
   assert.equal(radios.find((radio) => radio.value === 'dark').checked, true);
   assert.equal(asked.at(-1).dark, true);
+  assert.deepEqual([drawn.length, drawn.at(-1).body, drawn.at(-1).dark], [2, '<h1>S1</h1>', true], 'its thumbnail is drawn again, dark');
+  deckKey({ key: 'Escape' });
   deck.open = false;
   window.Theme = originalTheme;
+  window.IntersectionObserver = IO;
 });
 
 test('the overview\'s keys are among the deck\'s at its foot', () => {
