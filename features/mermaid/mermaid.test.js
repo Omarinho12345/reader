@@ -28,7 +28,7 @@ test('the wrapper takes the block\'s line, which stays on the page once the code
 test('Mermaid is served for the preview to load when a page has a diagram', () => {
   const feature = FEATURES.find((f) => f.name === 'mermaid');
   assert.match(feature.preview, /mermaid[\\/]preview\.js$/);
-  assert.match(feature.lazy, /vendor\/mermaid\.min\.js$/);
+  assert.match(feature.lazy, /vendor[\\/]mermaid\.min\.js$/);
 });
 
 test('a drawn diagram is an image named by its accTitle, or as a diagram', () => {
