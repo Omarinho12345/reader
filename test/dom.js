@@ -24,12 +24,15 @@
  */
 import { AssertionError } from 'node:assert';
 import fs from 'node:fs';
+import { isAbsolute } from 'node:path';
 import vm from 'node:vm';
 import { Window } from 'happy-dom';
 import { FEATURES } from '../features/index.js';
 
 const ROOT = new URL('../', import.meta.url);
-const read = (path) => fs.readFileSync(new URL(path, ROOT), 'utf8');
+// A feature names its preview script by its absolute path (features/index.js),
+// which on Windows starts with a drive, not a /, and so isn't a URL's path.
+const read = (path) => fs.readFileSync(isAbsolute(path) ? path : new URL(path, ROOT), 'utf8');
 
 export function page(html = '', { url = 'http://localhost:8734/' } = {}) {
   const window = new Window({

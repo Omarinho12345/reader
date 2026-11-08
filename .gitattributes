@@ -1,0 +1,7 @@
+# Checked out with LF everywhere, Windows too, as the code reads its own
+# stylesheets and scripts with patterns that expect \n (src/columns.js).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.woff2 binary
