@@ -13,7 +13,7 @@ import { measure, lead } from './sync.js';
 import { scheduleGutter } from './lines.js';
 import { updateCursor } from './status.js';
 import { paged, turnTo, turnToLine } from './pages.js';
-import { go as goToSlide } from './deck.js';
+import { go as goToSlide, closeOverview } from './deck.js';
 import { current, setAt } from './outline.js';
 import { find, flatten } from './sections.js';
 
@@ -47,6 +47,7 @@ let back = null;     // what had the keyboard before
 
 export function openGoTo() {
   if (state.current?.type !== 'md') return;
+  closeOverview();
   back = document.activeElement;
   el.goto.hidden = false;
   el.gotoInput.value = '';

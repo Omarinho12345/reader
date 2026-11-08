@@ -7,7 +7,7 @@
 
 import { el, deck } from './state.js';
 import { renderNow } from './render.js';
-import { showSlide } from './deck.js';
+import { showSlide, redrawOverview } from './deck.js';
 
 export function wireTheme() {
   const radios = [...el.theme.querySelectorAll('input[type=radio]')];
@@ -20,6 +20,9 @@ export function wireTheme() {
     if (now === dark) return;
     dark = now;
     renderNow();
-    if (deck.open) showSlide();
+    if (deck.open) {
+      showSlide();
+      redrawOverview();
+    }
   });
 }

@@ -8,7 +8,9 @@ const window = globals(app());
 const read = (html) => new window.DOMParser().parseFromString(html, 'text/html').body;
 
 const { deck, el, state } = await import('../static/app/state.js');
-const { paging, steps, deckKey, go, revealed, showSlide, present, closeDeck, onSpeakerMessage } = await import('../static/app/deck.js');
+const { paging, steps, deckKey, go, revealed, showSlide, present, loadDeck, closeDeck, onSpeakerMessage } = await import('../static/app/deck.js');
+const { openGoTo } = await import('../static/app/goto.js');
+const { wireTheme } = await import('../static/app/theme.js');
 
 /** Each thing a slide's steps show, by the step it shows with: [step, its text]. */
 function stepped(body) {
@@ -231,6 +233,111 @@ function presenting(n, { index = 0, reveal = 0, meta = {} } = {}) {
 }
 
 const options = () => [...el.overview.querySelectorAll('[role="option"]')];
+
+test('a reload refreshes the open overview, preserving its highlight separately from the current slide', async () => {
+  presenting(4, { index: 1 });
+  deckKey({ key: 'O' });
+  deckKey({ key: 'ArrowRight' });
+  assert.equal(window.document.activeElement, options()[2]);
+
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({
+      css: '',
+      meta: {},
+      slides: Array.from({ length: 5 }, (_, i) => ({
+        body: `<h1>Reloaded ${i + 1}</h1>`,
+        notes: '',
+        notesHtml: '',
+        line: i,
+      })),
+    }),
+  });
+
+  assert.equal(await loadDeck(), true);
+  assert.equal(options().length, 5);
+  assert.equal(options()[1].classList.contains('now'), true);
+  assert.equal(options()[1].getAttribute('aria-current'), 'true');
+  assert.equal(options()[2].getAttribute('aria-selected'), 'true');
+  assert.equal(window.document.activeElement, options()[2]);
+  assert.equal(options()[2].classList.contains('now'), false);
+  deckKey({ key: 'Escape' });
+  deck.open = false;
+});
+
+test('a reload clamps an overview highlight when its slide is removed', async () => {
+  presenting(5, { index: 1 });
+  deckKey({ key: 'O' });
+  deckKey({ key: 'End' });
+  assert.equal(window.document.activeElement, options()[4]);
+
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({
+      css: '',
+      meta: {},
+      slides: Array.from({ length: 3 }, (_, i) => ({
+        body: `<h1>Shortened ${i + 1}</h1>`,
+        notes: '',
+        notesHtml: '',
+        line: i,
+      })),
+    }),
+  });
+
+  assert.equal(await loadDeck(), true);
+  assert.equal(options().length, 3);
+  assert.equal(window.document.activeElement, options()[2]);
+  assert.equal(options()[2].getAttribute('aria-selected'), 'true');
+  assert.equal(options()[1].classList.contains('now'), true);
+  deckKey({ key: 'Escape' });
+  deck.open = false;
+});
+
+
+test('Ctrl+G closes the overview before opening Go To', () => {
+  state.current = { path: 'talk.md', type: 'md' };
+  el.editor.value = '# A talk\\n';
+  presenting(3, { index: 1 });
+  deckKey({ key: 'O' });
+  assert.equal(el.overview.hidden, false);
+
+  openGoTo();
+
+  assert.equal(el.overview.hidden, true);
+  assert.equal(el.goto.hidden, false);
+  assert.equal(window.document.activeElement, el.gotoInput);
+  el.goto.hidden = true;
+  deck.open = false;
+});
+
+test('a theme change redraws the slide with the new theme', async () => {
+  const originalTheme = window.Theme;
+  let listener;
+  let chosen = 'light';
+  let dark = false;
+  window.Theme = {
+    chosen: () => chosen,
+    dark: () => dark,
+    onChange: (fn) => { listener = fn; },
+  };
+  const radios = [...el.theme.querySelectorAll('input[type=radio]')];
+  wireTheme();
+  assert.equal(radios.find((radio) => radio.value === 'light').checked, true);
+
+  const asked = presenting(1);
+  state.current = { path: 'talk.md', type: 'other' };
+  chosen = 'dark';
+  dark = true;
+  listener(true, 'dark');
+  await deck.stageReady;
+  await null;
+
+  assert.equal(radios.find((radio) => radio.value === 'dark').checked, true);
+  assert.equal(asked.at(-1).dark, true);
+  deck.open = false;
+  window.Theme = originalTheme;
+});
 
 test('the overview\'s keys are among the deck\'s at its foot', () => {
   assert.match(el.deck.querySelector('.deck-keys').textContent, /P slide start · O overview · T notes/);

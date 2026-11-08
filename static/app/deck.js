@@ -86,6 +86,7 @@ export async function loadDeck() {
   deck.end = out.end ?? null;
   deck.index = Math.min(deck.index, deck.slides.length - 1);
   deck.reveal = Math.min(deck.reveal, deck.slides[deck.index].steps);
+  overview?.refresh(deck.slides, deck.index);
   el.deckBy.textContent = [deck.meta.author, deck.meta.date].filter(Boolean).join(' · ');
   // Beside it, how many slides are done, as the file has them.
   drawDone(el.deckDone, deck.slides.map((s, i) => mark(s.body, i)));
@@ -274,6 +275,16 @@ export function openOverview() {
   if (overview.isOpen) return;
   el.stage.inert = el.deckNotes.inert = el.deckFoot.inert = true;
   overview.open(deck.slides, deck.index);
+}
+
+/** Closes the overview before another deck-level dialog takes focus. */
+export function closeOverview() {
+  if (overview?.isOpen) overview.close();
+}
+
+/** Redraws the open thumbnails when their rendering context changes. */
+export function redrawOverview() {
+  overview?.redraw();
 }
 
 // The keys in the foot show for a while as the deck opens, and from then
